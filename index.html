@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Railway Platform Movement Simulation</title>
+  <meta name="description" content="Real-time railway platform movement simulation using an event-driven priority-queue engine. Pure vanilla JS, no frameworks." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══════════════════ HEADER ═══════════════════ -->
+  <header id="header">
+    <div class="header-logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="10" rx="2"/>
+        <path d="M9 11V7a3 3 0 0 1 6 0v4"/>
+        <line x1="3" y1="15" x2="21" y2="15"/>
+        <line x1="8" y1="21" x2="8" y2="20"/>
+        <line x1="16" y1="21" x2="16" y2="20"/>
+      </svg>
+      <div>
+        <div class="header-title">Railway Platform Movement Simulation</div>
+        <div class="header-subtitle">Event-Driven · Priority Queue Engine · 50 Trains · 4 Platforms</div>
+      </div>
+    </div>
+
+    <div class="header-sep"></div>
+
+    <!-- Sim time -->
+    <div id="sim-time-badge">
+      <span class="badge-label">Sim&nbsp;Time</span>
+      <span id="sim-time">10:00</span>
+    </div>
+
+    <!-- Speed control -->
+    <div class="speed-control">
+      <span class="speed-label">Speed</span>
+      <button class="speed-btn" id="btn-speed-down">−</button>
+      <span id="speed-display">1×</span>
+      <button class="speed-btn" id="btn-speed-up">+</button>
+    </div>
+
+    <!-- Running indicator -->
+    <div id="run-indicator" class="run-indicator"></div>
+
+    <!-- Play / Pause -->
+    <button class="ctrl-btn" id="btn-play">▶ Start</button>
+
+    <!-- Reset -->
+    <button class="ctrl-btn" id="btn-reset">↺ Reset</button>
+  </header>
+
+  <!-- ═══════════════════ TRACK CANVAS ═══════════════════ -->
+  <main id="canvas-area">
+    <span class="canvas-label">Track Visualisation</span>
+
+    <svg id="track-svg"
+         viewBox="0 0 1200 580"
+         preserveAspectRatio="xMidYMid meet">
+
+      <!-- Static track layer (drawn by JS) -->
+      <g id="track-layer"></g>
+
+      <!-- Train layer (drawn by JS, above tracks) -->
+      <g id="train-layer"></g>
+    </svg>
+
+    <!-- Tooltip (positioned absolutely over the SVG) -->
+    <div id="train-tooltip" class="train-tooltip" role="tooltip" aria-live="polite">
+      <div class="tt-name" id="tt-name">Train</div>
+      <div class="tt-row">Direction <span id="tt-dir">—</span></div>
+      <div class="tt-row">State     <span id="tt-state">—</span></div>
+      <div class="tt-row">Sched.    <span id="tt-sched">—</span></div>
+      <div class="tt-row">Delay     <span id="tt-delay">—</span></div>
+      <div class="tt-row">Platform  <span id="tt-plat">—</span></div>
+      <div class="tt-row">Halt      <span id="tt-halt">—</span></div>
+    </div>
+  </main>
+
+  <!-- ═══════════════════ SIDEBAR STATUS BOARD ═══════════════════ -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Train Status</span>
+      <span id="train-count-badge">0 active</span>
+    </div>
+    <div id="status-board" role="list" aria-label="Train status board"></div>
+  </aside>
+
+  <!-- ═══════════════════ METRICS PANEL ═══════════════════ -->
+  <footer id="metrics">
+
+    <!-- Current Sim Time -->
+    <div class="metric-block">
+      <div class="metric-label">Simulation Time</div>
+      <div class="metric-value cyan" id="m-current-time">10:00</div>
+      <div class="metric-sub">HH:MM (sim clock)</div>
+    </div>
+
+    <!-- Completed -->
+    <div class="metric-block">
+      <div class="metric-label">Completed</div>
+      <div class="metric-value green" id="m-completed">0</div>
+      <div class="metric-sub">trains departed</div>
+    </div>
+
+    <!-- Upcoming -->
+    <div class="metric-block">
+      <div class="metric-label">Upcoming</div>
+      <div class="metric-value blue" id="m-upcoming">50</div>
+      <div class="metric-sub">in schedule</div>
+    </div>
+
+    <!-- At Platform -->
+    <div class="metric-block">
+      <div class="metric-label">At Platform</div>
+      <div class="metric-value green" id="m-at-platform">0</div>
+      <div class="metric-sub">currently docked</div>
+    </div>
+
+    <!-- On Loop -->
+    <div class="metric-block">
+      <div class="metric-label">On Loop</div>
+      <div class="metric-value orange" id="m-on-loop">0</div>
+      <div class="metric-sub">waiting for platform</div>
+    </div>
+
+    <!-- Passing -->
+    <div class="metric-block">
+      <div class="metric-label">Passing</div>
+      <div class="metric-value purple" id="m-passing">0</div>
+      <div class="metric-sub">pass-through trains</div>
+    </div>
+
+    <!-- Avg Delay -->
+    <div class="metric-block">
+      <div class="metric-label">Avg. Delay</div>
+      <div class="metric-value yellow" id="m-avg-delay">0.0m</div>
+      <div class="metric-sub" id="m-delayed-sub">across <span id="m-delayed">0</span> delayed</div>
+    </div>
+
+    <!-- Events remaining -->
+    <div class="metric-block">
+      <div class="metric-label">Events Queued</div>
+      <div class="metric-value" id="m-events">50</div>
+      <div class="metric-sub">priority queue size</div>
+    </div>
+
+    <!-- Platform utilization -->
+    <div class="metric-block" style="flex:1.4">
+      <div class="metric-label">Platform Utilisation</div>
+      <div class="util-bars">
+        <div class="util-bar-wrap">
+          <div class="util-bar-track"><div class="util-bar-fill" id="util-fill-1" style="width:0%"></div></div>
+          <div class="util-bar-label" id="util-lbl-1">P1○</div>
+        </div>
+        <div class="util-bar-wrap">
+          <div class="util-bar-track"><div class="util-bar-fill" id="util-fill-2" style="width:0%"></div></div>
+          <div class="util-bar-label" id="util-lbl-2">P2○</div>
+        </div>
+        <div class="util-bar-wrap">
+          <div class="util-bar-track"><div class="util-bar-fill" id="util-fill-3" style="width:0%"></div></div>
+          <div class="util-bar-label" id="util-lbl-3">P3○</div>
+        </div>
+        <div class="util-bar-wrap">
+          <div class="util-bar-track"><div class="util-bar-fill" id="util-fill-4" style="width:0%"></div></div>
+          <div class="util-bar-label" id="util-lbl-4">P4○</div>
+        </div>
+      </div>
+      <!-- Overall progress bar -->
+      <div style="margin-top:6px; background:var(--bg-card); border:1px solid var(--border); border-radius:3px; height:6px; overflow:hidden;">
+        <div id="m-progress" style="height:100%; width:0%; background:var(--accent-cyan); border-radius:2px; transition:width .5s ease;"></div>
+      </div>
+      <div class="metric-sub" id="m-progress-label" style="margin-top:2px;">0% complete</div>
+    </div>
+
+  </footer>
+
+</div>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>
