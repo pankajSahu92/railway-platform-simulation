@@ -28,7 +28,7 @@ export class SimulationEngine {
         trains.forEach(train => {
             this.state.events.push({
                 type: train.type === 'PASS' ? 'TRAIN_PASSING_ARRIVAL' : 'TRAIN_ARRIVAL',
-                timestamp: train.scheduledArrivalTime,
+                timestamp: train.actualArrivalTime,
                 trainId: train.id,
             });
         });
@@ -58,6 +58,12 @@ export class SimulationEngine {
         }
     }
 
+    _updateDelays(train) {
+        train.secondaryDelay = Math.max(0, this.state.currentTime - train.actualArrivalTime);
+        train.totalDelay = train.primaryDelay + train.secondaryDelay;
+        train.delay = Math.max(0, this.state.currentTime - train.scheduledArrivalTime);
+    }
+
     /** Process the next event. Returns true if more events remain. */
     tick() {
         if (this.state.events.isEmpty()) return false;
@@ -81,8 +87,7 @@ export class SimulationEngine {
 
     _handleTrainArrival(train) {
         train.state = 'ARRIVING';
-        train.actualArrivalTime = this.state.currentTime;
-        train.delay = Math.max(0, this.state.currentTime - train.scheduledArrivalTime);
+        this._updateDelays(train);
         train.trackSegmentId = `${train.direction}_ENTRY`;
 
         const platform = this._findAvailablePlatform(train.direction);
@@ -101,7 +106,7 @@ export class SimulationEngine {
 
     _handleTrainPassingArrival(train) {
         train.state = 'PASSING';
-        train.actualArrivalTime = this.state.currentTime;
+        this._updateDelays(train);
         train.trackSegmentId = `${train.direction}_PASS`;
         this.state.events.push({
             type: 'TRAIN_PASSING_DEPARTURE',
@@ -134,8 +139,7 @@ export class SimulationEngine {
 
         if (waitingId !== undefined && platform) {
             const waiting = this.state.trains.find(t => t.id === waitingId);
-            waiting.actualArrivalTime = this.state.currentTime;
-            waiting.delay = this.state.currentTime - waiting.scheduledArrivalTime;
+            this._updateDelays(waiting);
             this._assignTrainToPlatform(waiting, platform);
         }
 
@@ -156,6 +160,7 @@ export class SimulationEngine {
         train.platformId = platform.id;
         platform.isOccupied = true;
         platform.trainId = train.id;
+        this._updateDelays(train);
 
         const departure = this.state.currentTime + train.haltDuration;
         train.scheduledDepartureTime = departure;

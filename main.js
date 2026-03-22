@@ -462,11 +462,15 @@ function renderTooltip() {
     const t = simState.trains.find(x => x.id === tooltipTrainId);
     if (!t) return;
 
+    const totalDelay = t.delay;
+    const primaryDelay = t.primaryDelay ?? 0;
+
     document.getElementById('tt-name').textContent = `${t.name} (${t.type})`;
     document.getElementById('tt-dir').textContent = t.direction;
     document.getElementById('tt-state').textContent = stateLabel(t.state);
     document.getElementById('tt-sched').textContent = formatTime(t.scheduledArrivalTime);
-    document.getElementById('tt-delay').textContent = t.delay > 0 ? `+${t.delay}m` : 'On time';
+    document.getElementById('tt-total-delay').textContent = totalDelay > 0 ? `+${totalDelay}m` : 'On time';
+    document.getElementById('tt-primary-delay').textContent = primaryDelay > 0 ? `+${primaryDelay}m` : 'None';
     document.getElementById('tt-plat').textContent = t.platformId ? `P${t.platformId}` : '—';
     document.getElementById('tt-halt').textContent = t.haltDuration ? `${t.haltDuration}m` : '—';
 }

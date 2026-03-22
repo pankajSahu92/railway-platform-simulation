@@ -21,13 +21,18 @@ export function generateTrains() {
             currentTime += interval;
         }
 
+        const primaryDelay = Math.floor(Math.random() * 6);
+
         trains.push({
             id: i + 1,
             name: `${direction === 'UP' ? 'U' : 'D'}${i + 1}`,
             direction,
             type,
             scheduledArrivalTime: currentTime,
-            actualArrivalTime: 0,
+            actualArrivalTime: currentTime + primaryDelay,
+            primaryDelay,
+            secondaryDelay: 0,
+            totalDelay: primaryDelay,
             scheduledDepartureTime: 0,
             actualDepartureTime: 0,
             haltDuration: type === 'STOP' ? haltDurations[i % haltDurations.length] : 0,
