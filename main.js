@@ -512,7 +512,7 @@ function renderLogPanel() {
 // 9. SIMULATION LOOP
 // ════════════════════════════════════════════════════
 
-const REAL_MS_PER_SIM_MIN = 400; // at speed×1, 1 sim-minute = 400ms
+const REAL_MS_PER_SIM_MIN = 700; // at speed×1, 1 sim-minute = 700ms
 let accumulatedMs = 0;
 let running = false;
 
