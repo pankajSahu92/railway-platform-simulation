@@ -352,11 +352,13 @@ function buildStatusBoard(trains) {
 
         const pInfo = t.platformId ? `P${t.platformId}` : (t.state === 'WAITING_ON_LOOP' ? 'Loop' : '—');
 
+        const delayStr = (t.totalDelay ?? t.delay) > 0 ? ` (+${t.totalDelay ?? t.delay}m)` : '';
+
         div.innerHTML = `
       <div class="tc-badge ${badgeClass}">${t.name}</div>
       <div class="tc-info">
         <div class="tc-name">${t.direction} · ${t.type}</div>
-        <div class="tc-meta">${formatTime(t.scheduledArrivalTime)} · ${pInfo}</div>
+        <div class="tc-meta">${formatTime(t.actualArrivalTime)}${delayStr} · ${pInfo}</div>
       </div>
       <div class="tc-state ${stCls}">${stateLabel(t.state)}</div>
     `;
