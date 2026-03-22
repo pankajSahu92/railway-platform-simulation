@@ -324,7 +324,7 @@ function updateTrainElements(trains) {
 // ════════════════════════════════════════════════════
 
 function formatTime(mins) {
-    if (!mins) return '--:--';
+    if (mins == null) return '--:--';
     const h = Math.floor(mins / 60) % 24;
     const m = mins % 60;
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -359,7 +359,8 @@ function buildStatusBoard(trains) {
 
         const pInfo = t.platformId ? `P${t.platformId}` : (t.state === 'WAITING_ON_LOOP' ? 'Loop' : '—');
 
-        const delayStr = (t.totalDelay ?? t.delay) > 0 ? ` (+${t.totalDelay ?? t.delay}m)` : '';
+        const d = t.totalDelay ?? t.delay ?? 0;
+        const delayStr = d > 0 ? ` (+${d}m)` : '';
 
         const stars = '★'.repeat(t.priority ?? 0);
 
@@ -388,14 +389,14 @@ function updateMetrics(state) {
     const platforms = state.platforms;
 
     const departed = trains.filter(t => ['DEPARTED', 'DEPARTING'].includes(t.state));
-    const delayed = trains.filter(t => t.delay > 0);
+    const delayed = trains.filter(t => (t.totalDelay ?? t.delay ?? 0) > 0);
     const atPlatform = trains.filter(t => t.state === 'AT_PLATFORM');
     const onLoop = trains.filter(t => t.state === 'WAITING_ON_LOOP');
     const passing = trains.filter(t => t.state === 'PASSING');
     const upcoming = trains.filter(t => t.state === 'UPCOMING');
 
     const avgDelay = delayed.length
-        ? (delayed.reduce((s, t) => s + t.delay, 0) / delayed.length).toFixed(1)
+        ? (delayed.reduce((s, t) => s + (t.totalDelay ?? t.delay ?? 0), 0) / delayed.length).toFixed(1)
         : '0.0';
 
     const utilPct = platforms.map(p => p.isOccupied ? 100 : 0);
@@ -462,7 +463,7 @@ function moveTooltip(e) {
     let ty = e.clientY - svgRect.top - 10;
     // keep in view
     if (tx + 160 > svgRect.width) tx = e.clientX - svgRect.left - 170;
-    if (ty + 90 > svgRect.height) ty = e.clientY - svgRect.top - 100;
+    if (ty + 130 > svgRect.height) ty = e.clientY - svgRect.top - 130;
     tooltip.style.left = `${tx}px`;
     tooltip.style.top = `${ty}px`;
     renderTooltip();
@@ -473,7 +474,7 @@ function renderTooltip() {
     const t = simState.trains.find(x => x.id === tooltipTrainId);
     if (!t) return;
 
-    const totalDelay = t.delay;
+    const totalDelay = t.totalDelay ?? t.delay ?? 0;
     const primaryDelay = t.primaryDelay ?? 0;
 
     document.getElementById('tt-name').textContent = `${t.name} (${t.type})`;
