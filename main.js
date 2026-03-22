@@ -21,6 +21,13 @@ let lastFrameTime = 0;
 // Tooltip state
 let tooltipTrainId = null;
 
+// ════════════════════════════════════════════════════
+// EVENT LOG STATE
+// ════════════════════════════════════════════════════
+const logs = [];
+const MAX_LOGS = 12;
+const prevTrainStates = new Map(); // trainId → { state, platformId }
+
 
 // 2. SVG ELEMENT REFS
 const svg = document.getElementById('track-svg');
@@ -480,6 +487,28 @@ function renderTooltip() {
 }
 
 // ════════════════════════════════════════════════════
+// EVENT LOG HELPERS
+// ════════════════════════════════════════════════════
+
+function pushLog(simTime, trainName, action) {
+    logs.unshift({ time: formatTime(simTime), trainName, action });
+    if (logs.length > MAX_LOGS) logs.length = MAX_LOGS;
+    renderLogPanel();
+}
+
+function renderLogPanel() {
+    const list = document.getElementById('log-list');
+    if (!list) return;
+    list.innerHTML = '';
+    logs.forEach(entry => {
+        const row = document.createElement('div');
+        row.className = 'log-entry';
+        row.innerHTML = `<span class="log-time">[${entry.time}]</span> <span class="log-text">${entry.trainName} → ${entry.action}</span>`;
+        list.appendChild(row);
+    });
+}
+
+// ════════════════════════════════════════════════════
 // 9. SIMULATION LOOP
 // ════════════════════════════════════════════════════
 
@@ -555,12 +584,25 @@ document.getElementById('btn-reset').addEventListener('click', () => {
     cancelAnimationFrame(rafId);
     trainVisuals.clear();
     trainLayer.innerHTML = '';
+    prevTrainStates.clear();
+    logs.length = 0;
+    renderLogPanel();
     engine.reset();
 
     const btn = document.getElementById('btn-play');
     btn.textContent = '▶ Start';
     btn.classList.remove('paused');
     document.getElementById('run-indicator').className = 'run-indicator';
+});
+
+document.getElementById('btn-logs').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const panel = document.getElementById('log-dropdown');
+    panel.classList.toggle('open');
+});
+
+document.addEventListener('click', () => {
+    document.getElementById('log-dropdown').classList.remove('open');
 });
 
 document.getElementById('btn-speed-up').addEventListener('click', () => {
@@ -581,6 +623,25 @@ engine.onStateUpdate = (state) => {
     simState = state;
     // Update sim time in header
     document.getElementById('sim-time').textContent = formatTime(state.currentTime);
+
+    // Diff train states to generate log entries
+    state.trains.forEach(t => {
+        const prev = prevTrainStates.get(t.id);
+        if (!prev) {
+            prevTrainStates.set(t.id, { state: t.state, platformId: t.platformId });
+            return;
+        }
+        if (prev.state !== t.state || prev.platformId !== t.platformId) {
+            if (t.state === 'AT_PLATFORM' && t.platformId) {
+                pushLog(state.currentTime, t.name, `Assigned P${t.platformId}`);
+            } else if (t.state === 'WAITING_ON_LOOP') {
+                pushLog(state.currentTime, t.name, 'Waiting');
+            } else if (t.state === 'DEPARTED') {
+                pushLog(state.currentTime, t.name, 'Departed');
+            }
+            prevTrainStates.set(t.id, { state: t.state, platformId: t.platformId });
+        }
+    });
 };
 
 

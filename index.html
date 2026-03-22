@@ -29,10 +29,17 @@
 
     <div class="header-sep"></div>
 
-    <!-- Sim time -->
-    <div id="sim-time-badge">
-      <span class="badge-label">Sim&nbsp;Time</span>
-      <span id="sim-time">10:00</span>
+    <!-- Sim time + Logs -->
+    <div class="sim-time-wrap">
+      <div id="sim-time-badge">
+        <span class="badge-label">Sim&nbsp;Time</span>
+        <span id="sim-time">10:00</span>
+      </div>
+      <button class="ctrl-btn log-toggle-btn" id="btn-logs">Logs ▾</button>
+      <div id="log-dropdown" class="log-dropdown" aria-label="Event log">
+        <div class="log-dropdown-header">Event Log</div>
+        <div id="log-list" class="log-list"></div>
+      </div>
     </div>
 
     <!-- Speed control -->
