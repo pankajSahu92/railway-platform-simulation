@@ -22,12 +22,14 @@ export function generateTrains() {
         }
 
         const primaryDelay = Math.floor(Math.random() * 6);
+        const priority = Math.floor(Math.random() * 3) + 1;
 
         trains.push({
             id: i + 1,
             name: `${direction === 'UP' ? 'U' : 'D'}${i + 1}`,
             direction,
             type,
+            priority,
             scheduledArrivalTime: currentTime,
             actualArrivalTime: currentTime + primaryDelay,
             primaryDelay,

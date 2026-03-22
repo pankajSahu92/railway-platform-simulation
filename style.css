@@ -399,6 +399,18 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+}
+
+.tc-priority {
+  font-size: 9px;
+  color: var(--accent-yellow);
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  opacity: 0.8;
 }
 
 .tc-meta {

@@ -354,10 +354,12 @@ function buildStatusBoard(trains) {
 
         const delayStr = (t.totalDelay ?? t.delay) > 0 ? ` (+${t.totalDelay ?? t.delay}m)` : '';
 
+        const stars = '★'.repeat(t.priority ?? 0);
+
         div.innerHTML = `
       <div class="tc-badge ${badgeClass}">${t.name}</div>
       <div class="tc-info">
-        <div class="tc-name">${t.direction} · ${t.type}</div>
+        <div class="tc-name">${t.direction} · ${t.type}<span class="tc-priority">${stars}</span></div>
         <div class="tc-meta">${formatTime(t.actualArrivalTime)}${delayStr} · ${pInfo}</div>
       </div>
       <div class="tc-state ${stCls}">${stateLabel(t.state)}</div>

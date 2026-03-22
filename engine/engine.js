@@ -64,6 +64,30 @@ export class SimulationEngine {
         train.delay = Math.max(0, this.state.currentTime - train.scheduledArrivalTime);
     }
 
+    _selectFromLoop(loop) {
+        if (loop.length === 0) return undefined;
+
+        let bestIndex = 0;
+        let bestTrain = this.state.trains.find(t => t.id === loop[0]);
+
+        for (let i = 1; i < loop.length; i++) {
+            const candidate = this.state.trains.find(t => t.id === loop[i]);
+            if (candidate.priority > bestTrain.priority) {
+                bestIndex = i;
+                bestTrain = candidate;
+            } else if (candidate.priority === bestTrain.priority) {
+                if (candidate.actualArrivalTime < bestTrain.actualArrivalTime) {
+                    bestIndex = i;
+                    bestTrain = candidate;
+                }
+            }
+        }
+
+        const selectedId = loop[bestIndex];
+        loop.splice(bestIndex, 1);
+        return selectedId;
+    }
+
     /** Process the next event. Returns true if more events remain. */
     tick() {
         if (this.state.events.isEmpty()) return false;
@@ -132,10 +156,9 @@ export class SimulationEngine {
         train.platformId = null;
         train.trackSegmentId = `${train.direction}_EXIT_${platform?.id}`;
 
-        // Check loop for waiting trains
-        const waitingId = train.direction === 'UP'
-            ? this.state.upLoop.shift()
-            : this.state.downLoop.shift();
+        // Check loop for waiting trains (priority-based selection)
+        const loop = train.direction === 'UP' ? this.state.upLoop : this.state.downLoop;
+        const waitingId = this._selectFromLoop(loop);
 
         if (waitingId !== undefined && platform) {
             const waiting = this.state.trains.find(t => t.id === waitingId);
